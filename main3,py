@@ -1,0 +1,607 @@
+import json
+import os
+
+
+# ============================================================
+# Student Class
+# ============================================================
+
+class Student:
+    def __init__(self, student_id, name, age, department,
+                 marks, attendance, status="Active"):
+
+        self.student_id = student_id
+        self.name = name
+        self.age = age
+        self.department = department
+        self.marks = marks
+        self.attendance = attendance
+        self.status = status
+
+    def calculate_average(self):
+        if not self.marks:
+            return 0
+
+        return sum(self.marks) / len(self.marks)
+
+    def get_performance(self):
+        average = self.calculate_average()
+
+        if average >= 75:
+            return "Excellent"
+        elif average >= 60:
+            return "Good"
+        elif average >= 50:
+            return "Average"
+        else:
+            return "Needs Improvement"
+
+    def get_result(self):
+        if self.calculate_average() >= 40:
+            return "PASS"
+        else:
+            return "FAIL"
+
+    def update(self, name=None, age=None, department=None,
+               marks=None, attendance=None, status=None):
+
+        if name:
+            self.name = name
+
+        if age is not None:
+            self.age = age
+
+        if department:
+            self.department = department
+
+        if marks is not None:
+            self.marks = marks
+
+        if attendance is not None:
+            self.attendance = attendance
+
+        if status:
+            self.status = status
+
+    def display(self):
+        print("\nStudent Details")
+        print("----------------")
+        print("ID         :", self.student_id)
+        print("Name       :", self.name)
+        print("Age        :", self.age)
+        print("Department :", self.department)
+        print("Marks      :", self.marks)
+        print("Average    :", round(self.calculate_average(), 2), "%")
+        print("Attendance :", self.attendance, "%")
+        print("Status     :", self.status)
+
+
+# ============================================================
+# StudentManager Class
+# ============================================================
+
+class StudentManager:
+    def __init__(self):
+        self.students = {}
+
+    def add_student(self, student):
+        if student.student_id in self.students:
+            print("Error: Student ID already exists.")
+            return False
+
+        self.students[student.student_id] = student
+        print("Student added successfully.")
+        return True
+
+    def get_student(self, student_id):
+        return self.students.get(student_id)
+
+    def update_student(self, student_id, **kwargs):
+        student = self.get_student(student_id)
+
+        if student is None:
+            print("Error: Student not found.")
+            return False
+
+        student.update(**kwargs)
+
+        print("Student updated successfully.")
+        return True
+
+    def delete_student(self, student_id):
+        if student_id not in self.students:
+            print("Error: Student not found.")
+            return False
+
+        del self.students[student_id]
+
+        print("Student deleted successfully.")
+        return True
+
+    def display_all(self):
+        if not self.students:
+            print("No student records found.")
+            return
+
+        print("\n========== ALL STUDENTS ==========")
+
+        for student in self.students.values():
+            student.display()
+
+    def search_student(self, keyword):
+        results = []
+
+        for student in self.students.values():
+
+            if (keyword.lower() in student.name.lower()
+                    or keyword.lower() in student.student_id.lower()
+                    or keyword.lower() in student.department.lower()):
+
+                results.append(student)
+
+        return results
+
+    def get_all_students(self):
+        return list(self.students.values())
+
+
+# ============================================================
+# ReportGenerator Class
+# ============================================================
+
+class ReportGenerator:
+
+    @staticmethod
+    def student_report(student):
+
+        print("\nStudent Report")
+        print("---------------")
+
+        print(
+            f"{student.student_id} | "
+            f"{student.name} | "
+            f"{student.department}"
+        )
+
+        print(
+            f"Average: "
+            f"{student.calculate_average():.1f}%"
+        )
+
+        print(
+            f"Attendance: "
+            f"{student.attendance}%"
+        )
+
+        print(
+            f"Performance: "
+            f"{student.get_performance()}"
+        )
+
+        print(
+            f"Status: "
+            f"{student.status}"
+        )
+
+    @staticmethod
+    def class_report(manager):
+
+        students = manager.get_all_students()
+
+        if not students:
+            print("No students available.")
+            return
+
+        total = len(students)
+
+        class_average = sum(
+            student.calculate_average()
+            for student in students
+        ) / total
+
+        top_student = max(
+            students,
+            key=lambda student: student.calculate_average()
+        )
+
+        print("\n========== CLASS REPORT ==========")
+
+        print("Total Students:", total)
+
+        print(
+            "Average Class Mark:",
+            round(class_average, 2)
+        )
+
+        print("\nTop Performer:")
+        print(
+            f"{top_student.name} - "
+            f"Average: "
+            f"{top_student.calculate_average():.1f}%"
+        )
+
+        print("\nAttendance Below 75%:")
+
+        found = False
+
+        for student in students:
+            if student.attendance < 75:
+                print(
+                    f"{student.name} - "
+                    f"{student.attendance}%"
+                )
+                found = True
+
+        if not found:
+            print("None")
+
+        print("\nResults:")
+
+        for student in students:
+            print(
+                f"{student.name} - "
+                f"{student.get_result()}"
+            )
+
+
+# ============================================================
+# FileManager Class
+# ============================================================
+
+class FileManager:
+
+    FILE_NAME = "students.json"
+
+    @staticmethod
+    def save(manager):
+
+        data = []
+
+        for student in manager.get_all_students():
+
+            data.append({
+                "student_id": student.student_id,
+                "name": student.name,
+                "age": student.age,
+                "department": student.department,
+                "marks": student.marks,
+                "attendance": student.attendance,
+                "status": student.status
+            })
+
+        try:
+
+            with open(
+                FileManager.FILE_NAME,
+                "w"
+            ) as file:
+
+                json.dump(
+                    data,
+                    file,
+                    indent=4
+                )
+
+            print("Records saved successfully.")
+
+        except IOError:
+
+            print("Error: Unable to save records.")
+
+    @staticmethod
+    def load(manager):
+
+        if not os.path.exists(
+                FileManager.FILE_NAME):
+
+            return
+
+        try:
+
+            with open(
+                FileManager.FILE_NAME,
+                "r"
+            ) as file:
+
+                data = json.load(file)
+
+            for item in data:
+
+                student = Student(
+                    item["student_id"],
+                    item["name"],
+                    item["age"],
+                    item["department"],
+                    item["marks"],
+                    item["attendance"],
+                    item["status"]
+                )
+
+                manager.add_student_silent(student)
+
+            print("Records loaded successfully.")
+
+        except (IOError, json.JSONDecodeError):
+
+            print("Error: Unable to load records.")
+
+
+# ============================================================
+# Additional method for loading
+# ============================================================
+
+def add_student_silent(self, student):
+
+    if student.student_id not in self.students:
+        self.students[student.student_id] = student
+
+
+StudentManager.add_student_silent = add_student_silent
+
+
+# ============================================================
+# Input Functions
+# ============================================================
+
+def create_student(manager):
+
+    print("\n--- Create Student ---")
+
+    student_id = input("Student ID: ").strip()
+
+    if manager.get_student(student_id):
+        print("Error: Student ID already exists.")
+        return
+
+    name = input("Name: ").strip()
+
+    try:
+        age = int(input("Age: "))
+    except ValueError:
+        print("Invalid age.")
+        return
+
+    department = input("Department: ").strip()
+
+    try:
+        marks_input = input(
+            "Marks (comma separated): "
+        )
+
+        marks = [
+            float(mark.strip())
+            for mark in marks_input.split(",")
+        ]
+
+    except ValueError:
+        print("Invalid marks.")
+        return
+
+    try:
+        attendance = float(
+            input("Attendance (%): ")
+        )
+
+    except ValueError:
+        print("Invalid attendance.")
+        return
+
+    if any(mark < 0 or mark > 100 for mark in marks):
+        print("Marks must be between 0 and 100.")
+        return
+
+    if attendance < 0 or attendance > 100:
+        print("Attendance must be between 0 and 100.")
+        return
+
+    student = Student(
+        student_id,
+        name,
+        age,
+        department,
+        marks,
+        attendance
+    )
+
+    manager.add_student(student)
+
+
+def update_student(manager):
+
+    print("\n--- Update Student ---")
+
+    student_id = input("Student ID: ").strip()
+
+    student = manager.get_student(student_id)
+
+    if student is None:
+        print("Student not found.")
+        return
+
+    print("\nLeave a field empty to keep its current value.")
+
+    name = input(
+        f"Name [{student.name}]: "
+    ).strip()
+
+    age_input = input(
+        f"Age [{student.age}]: "
+    ).strip()
+
+    department = input(
+        f"Department [{student.department}]: "
+    ).strip()
+
+    marks_input = input(
+        f"Marks {student.marks}: "
+    ).strip()
+
+    attendance_input = input(
+        f"Attendance [{student.attendance}]: "
+    ).strip()
+
+    kwargs = {}
+
+    if name:
+        kwargs["name"] = name
+
+    if age_input:
+        try:
+            kwargs["age"] = int(age_input)
+        except ValueError:
+            print("Invalid age.")
+            return
+
+    if department:
+        kwargs["department"] = department
+
+    if marks_input:
+        try:
+            kwargs["marks"] = [
+                float(mark.strip())
+                for mark in marks_input.split(",")
+            ]
+        except ValueError:
+            print("Invalid marks.")
+            return
+
+    if attendance_input:
+        try:
+            kwargs["attendance"] = float(
+                attendance_input
+            )
+        except ValueError:
+            print("Invalid attendance.")
+            return
+
+    manager.update_student(
+        student_id,
+        **kwargs
+    )
+
+
+def search_student(manager):
+
+    keyword = input(
+        "\nSearch by ID, name, or department: "
+    ).strip()
+
+    results = manager.search_student(keyword)
+
+    if not results:
+        print("No matching student found.")
+        return
+
+    for student in results:
+        ReportGenerator.student_report(student)
+
+
+def delete_student(manager):
+
+    student_id = input(
+        "\nEnter Student ID to delete: "
+    ).strip()
+
+    manager.delete_student(student_id)
+
+
+# ============================================================
+# Main Program
+# ============================================================
+
+def main():
+
+    manager = StudentManager()
+
+    # Load existing records
+    FileManager.load(manager)
+
+    while True:
+
+        print("\n======================================")
+        print(" STUDENT RECORD MANAGEMENT SYSTEM")
+        print("======================================")
+
+        print("1. Add Student")
+        print("2. View Students")
+        print("3. Search Student")
+        print("4. Update Student")
+        print("5. Delete Student")
+        print("6. Student Performance Report")
+        print("7. Class Report")
+        print("8. Save Records")
+        print("9. Exit")
+
+        print("======================================")
+
+        choice = input(
+            "Choose an option: "
+        ).strip()
+
+        if choice == "1":
+
+            create_student(manager)
+
+        elif choice == "2":
+
+            manager.display_all()
+
+        elif choice == "3":
+
+            search_student(manager)
+
+        elif choice == "4":
+
+            update_student(manager)
+
+        elif choice == "5":
+
+            delete_student(manager)
+
+        elif choice == "6":
+
+            student_id = input(
+                "Enter Student ID: "
+            ).strip()
+
+            student = manager.get_student(
+                student_id
+            )
+
+            if student:
+                ReportGenerator.student_report(
+                    student
+                )
+            else:
+                print("Student not found.")
+
+        elif choice == "7":
+
+            ReportGenerator.class_report(
+                manager
+            )
+
+        elif choice == "8":
+
+            FileManager.save(manager)
+
+        elif choice == "9":
+
+            FileManager.save(manager)
+
+            print("Records saved.")
+            print("Goodbye!")
+
+            break
+
+        else:
+
+            print(
+                "Invalid option. "
+                "Please choose 1-9."
+            )
+
+
+# Start program
+if __name__ == "__main__":
+    main()
